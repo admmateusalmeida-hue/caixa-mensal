@@ -411,6 +411,7 @@ button{font-family:inherit}
       <button class="btn btn-ghost" id="openGoalsBtn">Metas</button>
       <button class="btn btn-ghost" id="openInvestmentsBtn">Investimentos</button>
       <button class="btn btn-ghost" id="openShareBtn">Compartilhar</button>
+      <button class="btn btn-ghost" id="openCardsBtn">Cartões</button>
       <button class="btn btn-primary" id="openAssistantBtn">Assistente</button>
       <button class="btn btn-ghost" id="exportBtn">Exportar CSV</button>
     </div>
@@ -716,13 +717,41 @@ button{font-family:inherit}
   </div>
 </div>
 
+<!-- Cards (milhas/cashback) modal -->
+<div class="overlay" id="cardsOverlay" hidden>
+  <div class="sheet" style="max-width:600px">
+    <div class="sheet-head"><h3>Cartões e recompensas</h3><button class="close-x" data-close="cardsOverlay">×</button></div>
+    <p class="panel-sub" style="margin-top:-6px">Cadastre seus cartões para o Assistente recomendar qual usar em cada compra, maximizando milhas ou cashback.</p>
+    <div id="cardsList"></div>
+    <div class="sub-add">
+      <h4>Novo cartão</h4>
+      <div class="field-row">
+        <div class="field"><label>Nome</label><input id="newCardName" placeholder="Ex.: Nubank Ultravioleta"></div>
+        <div class="field">
+          <label>Tipo de recompensa</label>
+          <select id="newCardType"><option value="milhas">Milhas / pontos</option><option value="cashback">Cashback</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label id="newCardRateLabel">Taxa padrão (pontos por R$1)</label><input id="newCardRate" type="number" step="0.01" min="0" placeholder="Ex.: 1"></div>
+        <div class="field"><label>Anuidade (R$/ano)</label><input id="newCardFee" type="number" step="0.01" min="0" placeholder="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Categoria com bônus (opcional)</label><input id="newCardBonusCategory" list="categoryListAll" placeholder="Ex.: IFood/restaurante"></div>
+        <div class="field"><label id="newCardBonusRateLabel">Taxa na categoria bônus</label><input id="newCardBonusRate" type="number" step="0.01" min="0" placeholder="Ex.: 2"></div>
+      </div>
+      <button class="btn btn-primary" id="addCardBtn" style="width:100%">Adicionar cartão</button>
+    </div>
+  </div>
+</div>
+
 <!-- Financial assistant chat modal -->
 <div class="overlay" id="assistantOverlay" hidden>
   <div class="sheet" style="max-width:520px">
     <div class="sheet-head"><h3>Assistente financeiro</h3><button class="close-x" data-close="assistantOverlay">×</button></div>
     <p class="panel-sub" style="margin-top:-6px">Seu educador financeiro pessoal: gastos, dívidas, crédito x débito, milhas e cashback — sempre com base nos dados reais do app.</p>
     <div class="assistant-messages" id="assistantMessages">
-      <p class="assistant-empty" id="assistantEmptyMsg">Exemplos: "por onde eu começo a quitar minhas dívidas?", "vale a pena usar cartão de crédito pra ganhar milhas?", "devo usar mais crédito ou débito?", "como está minha reserva de emergência?"</p>
+      <p class="assistant-empty" id="assistantEmptyMsg">Exemplos: "qual cartão eu uso pra comprar no mercado?", "por onde eu começo a quitar minhas dívidas?", "vale a pena a anuidade do meu cartão?", "como está minha reserva de emergência?"</p>
     </div>
     <div class="assistant-input-row">
       <input id="assistantInput" type="text" placeholder="Pergunte algo sobre suas finanças…" autocomplete="off">
@@ -747,7 +776,8 @@ button{font-family:inherit}
     reserveTarget: 0, reserveContribs: [], unsubReserveMain:null, unsubReserveContribs:null, reserveSeeded:false,
     assistantHistory: [],
     goals: [], goalContribs: [], unsubGoals:null, unsubGoalContribs:null,
-    investments: [], unsubInvestments: null
+    investments: [], unsubInvestments: null,
+    cards: [], unsubCards: null
   };
   var DEFAULT_RESERVE_TARGET = 60000;
   var assistantSample = null;
@@ -798,6 +828,7 @@ button{font-family:inherit}
       subscribeReserve();
       subscribeGoals();
       subscribeInvestments();
+      subscribeCards();
       loadMonth(state.month);
     }).catch(function(){ showNoDb(); });
   }
@@ -1918,6 +1949,82 @@ button{font-family:inherit}
     }).catch(function(e){ alert("Erro ao registrar: "+e.message); });
   });
 
+  // ---------- Cards (milhas/cashback) ----------
+  function subscribeCards(){
+    if (state.unsubCards) state.unsubCards();
+    state.unsubCards = state.db.collection("cards").orderBy("createdAt","asc").onSnapshot(function(snap){
+      state.cards = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderCardsManager();
+    }, function(err){ console.error("cards snapshot", err); });
+  }
+  function rewardUnitLabel(type){ return type === "cashback" ? "% cashback" : "pontos por R$1"; }
+  function renderCardsManager(){
+    var el = document.getElementById("cardsList");
+    if (!el) return;
+    if (!state.cards.length){
+      el.innerHTML = '<p class="empty">Nenhum cartão cadastrado ainda.</p>';
+      return;
+    }
+    el.innerHTML = state.cards.map(function(c){
+      var type = c.rewardType === "cashback" ? "cashback" : "milhas";
+      return '<div class="inst-card" data-id="'+c.id+'">' +
+        '<div class="inst-card-top"><input data-f="name" value="'+escapeHtml(c.name)+'">' +
+        '<button class="icon-btn" data-del-card="'+c.id+'" aria-label="Excluir cartão">'+ICON_TRASH+'</button></div>' +
+        '<div class="inst-fields">' +
+        '<label>Tipo<select data-f="rewardType"><option value="milhas"'+(type==="milhas"?" selected":"")+'>Milhas/pontos</option><option value="cashback"'+(type==="cashback"?" selected":"")+'>Cashback</option></select></label>' +
+        '<label>Taxa padrão ('+rewardUnitLabel(type)+')<input data-f="rate" type="number" step="0.01" min="0" value="'+(c.rate||0)+'"></label>' +
+        '<label>Categoria bônus<input data-f="bonusCategory" value="'+escapeHtml(c.bonusCategory||"")+'" list="categoryListAll"></label>' +
+        '<label>Taxa bônus<input data-f="bonusRate" type="number" step="0.01" min="0" value="'+(c.bonusRate||0)+'"></label>' +
+        '<label>Anuidade (R$/ano)<input data-f="annualFee" type="number" step="0.01" min="0" value="'+(c.annualFee||0)+'"></label>' +
+        '</div></div>';
+    }).join("");
+    el.querySelectorAll('.inst-card input, .inst-card select').forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var id = inp.closest(".inst-card").getAttribute("data-id");
+        var field = inp.getAttribute("data-f");
+        var numeric = { rate:1, bonusRate:1, annualFee:1 };
+        var val = numeric[field] ? (parseFloat(inp.value)||0) : inp.value.trim();
+        var payload = {}; payload[field] = val;
+        state.db.doc("cards/"+id).update(payload).catch(function(e){ alert("Erro ao salvar: "+e.message); });
+      });
+    });
+    el.querySelectorAll('[data-del-card]').forEach(function(b){
+      b.addEventListener("click", function(){
+        if (!confirm("Excluir este cartão?")) return;
+        state.db.doc("cards/"+b.getAttribute("data-del-card")).delete().catch(function(e){ alert("Erro: "+e.message); });
+      });
+    });
+  }
+  document.getElementById("openCardsBtn").addEventListener("click", function(){
+    renderCardsManager();
+    document.getElementById("cardsOverlay").hidden = false;
+  });
+  document.getElementById("newCardType").addEventListener("change", function(){
+    var unit = rewardUnitLabel(this.value);
+    document.getElementById("newCardRateLabel").textContent = "Taxa padrão (" + unit + ")";
+    document.getElementById("newCardBonusRateLabel").textContent = "Taxa bônus (" + unit + ")";
+  });
+  document.getElementById("addCardBtn").addEventListener("click", function(){
+    if (!state.db){ alert("Abra este app dentro do Claude para salvar."); return; }
+    var name = document.getElementById("newCardName").value.trim();
+    var rewardType = document.getElementById("newCardType").value;
+    var rate = parseFloat(document.getElementById("newCardRate").value) || 0;
+    var annualFee = parseFloat(document.getElementById("newCardFee").value) || 0;
+    var bonusCategory = document.getElementById("newCardBonusCategory").value.trim();
+    var bonusRate = parseFloat(document.getElementById("newCardBonusRate").value) || 0;
+    if (!name){ alert("Dê um nome para o cartão."); return; }
+    state.db.collection("cards").add({
+      name:name, rewardType:rewardType, rate:rate, annualFee:annualFee,
+      bonusCategory:bonusCategory, bonusRate:bonusRate, active:true, createdAt: nowIso()
+    }).then(function(){
+      document.getElementById("newCardName").value = "";
+      document.getElementById("newCardRate").value = "";
+      document.getElementById("newCardFee").value = "";
+      document.getElementById("newCardBonusCategory").value = "";
+      document.getElementById("newCardBonusRate").value = "";
+    }).catch(function(e){ alert("Erro ao adicionar: "+e.message); });
+  });
+
   // ---------- Share ----------
   document.getElementById("openShareBtn").addEventListener("click", function(){
     document.getElementById("shareOverlay").hidden = false;
@@ -1999,6 +2106,20 @@ button{font-family:inherit}
         }
       },
       {
+        name: "cartoes_e_recompensas",
+        description: "Retorna a lista de cartões cadastrados pelo usuário, cada um com o tipo de recompensa (milhas/pontos ou cashback), a taxa padrão, uma categoria com taxa bônus (se houver) e a anuidade. Use sempre que a pergunta envolver qual cartão usar em uma compra, comparação entre cartões, ou como maximizar milhas/cashback — nunca invente cartões ou taxas que o usuário não cadastrou; se a lista vier vazia, oriente o usuário a cadastrar os cartões no botão 'Cartões' do app antes de recomendar algo específico.",
+        execute: async function(){
+          if (!state.db) throw new Error("Sem acesso aos dados agora.");
+          return state.cards.filter(function(c){ return c.active!==false; }).map(function(c){
+            return {
+              nome:c.name, tipoDeRecompensa: c.rewardType==="cashback"?"cashback":"milhas/pontos",
+              taxaPadrao: Number(c.rate)||0, categoriaBonus: c.bonusCategory||null,
+              taxaNaCategoriaBonus: c.bonusRate?Number(c.bonusRate):null, anuidadeAnual: Number(c.annualFee)||0
+            };
+          });
+        }
+      },
+      {
         name: "status_reserva",
         description: "Retorna o status da reserva de emergência: meta definida, total já guardado, quanto ainda falta e a porcentagem já atingida.",
         execute: async function(){
@@ -2059,6 +2180,7 @@ button{font-family:inherit}
       "Diretrizes de especialista:\n" +
       "- Dívidas: use a ferramenta de compromissos e dívidas para ver o que existe. Se o usuário quiser priorizar quitação, pergunte a taxa de juros de cada dívida quando não for óbvia — recomende o método avalanche (quitar primeiro a de juros mais alto) como padrão, mas explique a alternativa bola de neve (quitar a menor primeiro, por motivação) se parecer relevante para o perfil da pessoa.\n" +
       "- Crédito x débito/Pix: cartão de crédito só compensa quando a fatura é paga INTEGRALMENTE todo mês — só nesse caso vale usá-lo para acumular milhas ou cashback em compras que já aconteceriam de qualquer forma. Se há risco de não pagar a fatura cheia, ou já existe dívida no cartão, recomende Pix/débito sem hesitar — o rotativo do cartão no Brasil costuma passar de 400% ao ano. Baseie a recomendação na forma de pagamento que o usuário já usa (consulte os dados reais).\n" +
+      "- Especialista em milhas e cashback: use a ferramenta de cartões cadastrados para saber o que o usuário realmente tem disponível — nunca sugira um cartão que ele não cadastrou. Para cada categoria de gasto relevante (consulte o resumo do mês), recomende qual cartão cadastrado rende mais milhas/cashback nela, considerando a taxa bônus por categoria quando existir. Se não houver nenhum cartão cadastrado, ou se a categoria de uma compra não tiver bônus em nenhum cartão, isso é informação valiosa também — diga isso ao usuário e sugira cadastrar um cartão adequado, em vez de inventar um. Sempre lembre que a anuidade só compensa se o valor recebido em milhas/cashback ao longo do ano superar o custo da anuidade — faça essa conta quando fizer sentido.\n" +
       "- Sempre que recomendar algo com números, mostre a conta de forma simples (ex.: 'R$2.000/mês no crédito com 1% de cashback = R$20/mês de volta', ou 'R$1.000 de dívida a 12% ao mês = R$120/mês só de juros').\n\n" +
       "Mês em exibição no app agora: " + monthLabel(state.month) + " (" + state.month + ").";
     var turns = state.assistantHistory.slice();
