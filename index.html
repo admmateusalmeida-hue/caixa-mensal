@@ -180,6 +180,15 @@ button{font-family:inherit}
 .legend-pct{color:var(--ink-dim);text-align:right;min-width:32px}
 .legend-amt{font-weight:500;text-align:right;white-space:nowrap}
 
+.assistant-messages{display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto;padding:4px 2px;margin-bottom:12px}
+.msg{max-width:88%;padding:9px 12px;border-radius:12px;font-size:.86rem;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:3px}
+.msg.assistant{align-self:flex-start;background:var(--surface-2);color:var(--ink);border-bottom-left-radius:3px}
+.msg.thinking{color:var(--ink-dim);font-style:italic}
+.assistant-input-row{display:flex;gap:8px}
+.assistant-input-row input{flex:1;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:.9rem;background:var(--bg);color:var(--ink);font-family:inherit}
+.assistant-empty{color:var(--ink-dim);font-size:.82rem;padding:6px 2px 14px}
+
 @media (max-width:760px){
   .dashboard-grid{grid-template-columns:1fr}
 }
@@ -351,6 +360,7 @@ button{font-family:inherit}
       <button class="btn btn-ghost" id="manageCategoriesBtn">Categorias</button>
       <button class="btn btn-ghost" id="annualBtn">Panorama anual</button>
       <button class="btn btn-ghost" id="openReserveBtn">Reserva</button>
+      <button class="btn btn-primary" id="openAssistantBtn">Assistente</button>
       <button class="btn btn-ghost" id="exportBtn">Exportar CSV</button>
     </div>
   </header>
@@ -594,6 +604,21 @@ button{font-family:inherit}
   </div>
 </div>
 
+<!-- Financial assistant chat modal -->
+<div class="overlay" id="assistantOverlay" hidden>
+  <div class="sheet" style="max-width:520px">
+    <div class="sheet-head"><h3>Assistente financeiro</h3><button class="close-x" data-close="assistantOverlay">×</button></div>
+    <p class="panel-sub" style="margin-top:-6px">Pergunte sobre seus gastos, entradas, categorias ou a reserva de emergência — as respostas usam os dados reais lançados no app.</p>
+    <div class="assistant-messages" id="assistantMessages">
+      <p class="assistant-empty" id="assistantEmptyMsg">Exemplos: "quanto gastei com mercado esse mês?", "minhas saídas fixas cabem nas minhas entradas?", "como está minha reserva de emergência?"</p>
+    </div>
+    <div class="assistant-input-row">
+      <input id="assistantInput" type="text" placeholder="Pergunte algo sobre suas finanças…" autocomplete="off">
+      <button class="btn btn-primary btn-sm" id="assistantSendBtn">Perguntar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -607,9 +632,11 @@ button{font-family:inherit}
     recurring: [], installments: [], categories: [], entries: [],
     unsubEntries:null, unsubRecurring:null, unsubInstallments:null, unsubCategories:null,
     categoriesSeeded:false, annualYear: Number(currentMonthStr(new Date()).slice(0,4)),
-    reserveTarget: 0, reserveContribs: [], unsubReserveMain:null, unsubReserveContribs:null, reserveSeeded:false
+    reserveTarget: 0, reserveContribs: [], unsubReserveMain:null, unsubReserveContribs:null, reserveSeeded:false,
+    assistantHistory: []
   };
   var DEFAULT_RESERVE_TARGET = 60000;
+  var assistantSample = null;
   var fmtBRL = new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'});
   var fmtMonth = new Intl.DateTimeFormat('pt-BR', {month:'long', year:'numeric'});
 
@@ -646,6 +673,7 @@ button{font-family:inherit}
 
   // ---------- DB bootstrap ----------
   function boot(){
+    initAssistant();
     if (!window.claude || !window.claude.use){ showNoDb(); return; }
     window.claude.use("db").then(function(db){
       if (!db){ showNoDb(); return; }
@@ -1527,6 +1555,143 @@ button{font-family:inherit}
       document.getElementById("newContribAmount").value = "";
       document.getElementById("newContribNote").value = "";
     }).catch(function(e){ alert("Erro ao registrar: "+e.message); });
+  });
+
+  // ---------- Financial assistant ----------
+  function initAssistant(){
+    if (!window.claude || !window.claude.use) return;
+    window.claude.use("sample").then(function(s){ assistantSample = s; }).catch(function(){ assistantSample = null; });
+  }
+  function assistantTools(){
+    return [
+      {
+        name: "resumo_do_mes",
+        description: "Retorna o resumo financeiro real de um mês do app: total de entradas, saídas fixas, saídas variáveis, saldo, o valor gasto por categoria, o valor recebido por origem e as contas fixas ainda pendentes de pagamento. Use sempre que a pergunta envolver valores, categorias, saldo ou contas de um mês específico.",
+        inputSchema: { type:"object", properties: {
+          mes: { type:"string", description:"Mês no formato AAAA-MM, por exemplo 2026-09. Se omitido, usa o mês em exibição no app agora: " + state.month + "." }
+        } },
+        execute: async function(input){
+          if (!state.db) throw new Error("Sem acesso aos dados agora.");
+          var mes = (input && input.mes) ? String(input.mes) : state.month;
+          if (!/^\d{4}-\d{2}$/.test(mes)) throw new Error("Formato de mês inválido, use AAAA-MM.");
+          var snap = await state.db.collection("entries").where("month","==",mes).get();
+          var entradas=0, saidasFixas=0, saidasVariaveis=0, catSaidas={}, origEntradas={}, pendentes=[];
+          snap.docs.forEach(function(d){
+            var e = d.data();
+            if (e.status === "pulado") return;
+            var v = Number(e.amount)||0;
+            if (e.type === "receita"){
+              entradas += v;
+              var o = e.category || "Outro";
+              origEntradas[o] = (origEntradas[o]||0) + v;
+            } else {
+              if (e.kind === "fixa") saidasFixas += v; else saidasVariaveis += v;
+              var c = e.category || "Outro";
+              catSaidas[c] = (catSaidas[c]||0) + v;
+              if (e.kind === "fixa" && e.status === "pendente") pendentes.push({nome:e.description, valor:v, diaVencimento:e.dueDay});
+            }
+          });
+          return {
+            mes: mes,
+            entradas: Number(entradas.toFixed(2)),
+            saidasFixas: Number(saidasFixas.toFixed(2)),
+            saidasVariaveis: Number(saidasVariaveis.toFixed(2)),
+            saldo: Number((entradas-saidasFixas-saidasVariaveis).toFixed(2)),
+            gastosPorCategoria: catSaidas,
+            entradasPorOrigem: origEntradas,
+            contasFixasPendentes: pendentes
+          };
+        }
+      },
+      {
+        name: "status_reserva",
+        description: "Retorna o status da reserva de emergência: meta definida, total já guardado, quanto ainda falta e a porcentagem já atingida.",
+        execute: async function(){
+          if (!state.db) throw new Error("Sem acesso aos dados agora.");
+          var saved = reserveSavedTotal();
+          var target = state.reserveTarget || 0;
+          return {
+            meta: Number(target.toFixed(2)),
+            guardado: Number(saved.toFixed(2)),
+            falta: Number(Math.max(0, target-saved).toFixed(2)),
+            percentual: target > 0 ? Math.round((saved/target)*100) : 0
+          };
+        }
+      }
+    ];
+  }
+  function appendMsg(cls, text){
+    var empty = document.getElementById("assistantEmptyMsg");
+    if (empty) empty.remove();
+    var box = document.getElementById("assistantMessages");
+    var div = document.createElement("div");
+    div.className = "msg " + cls;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+  function assistantErrorText(e){
+    var code = e && e.code;
+    var map = {
+      not_granted: "Você optou por não usar o assistente nesta visualização.",
+      sampling_disabled: "O assistente não está disponível para esta conta.",
+      not_declared: "Assistente indisponível nesta versão do app.",
+      capability_disabled: "Assistente indisponível nesta visualização.",
+      capability_removed: "Assistente indisponível nesta visualização.",
+      rate_limited: "Muitas perguntas em pouco tempo — espere um instante e tente de novo.",
+      refused: "Não consegui responder essa pergunta. Tente reformular.",
+      empty_completion: "Não consegui gerar uma resposta. Tente novamente.",
+      prompt_too_large: "A conversa ficou muito longa — feche e abra o assistente de novo.",
+      session_expired: "Sua sessão expirou — atualize a página e entre novamente.",
+      cancelled: "Pergunta cancelada."
+    };
+    return map[code] || "Algo deu errado ao perguntar. Tente de novo.";
+  }
+  async function sendAssistantMessage(){
+    var input = document.getElementById("assistantInput");
+    var question = input.value.trim();
+    if (!question) return;
+    if (!state.db){ appendMsg("assistant", "Abra este app dentro do Claude para o assistente acessar seus dados."); return; }
+    if (!assistantSample){ appendMsg("assistant", "Assistente indisponível nesta visualização."); return; }
+    input.value = "";
+    var sendBtn = document.getElementById("assistantSendBtn");
+    sendBtn.disabled = true;
+    appendMsg("user", question);
+    var thinkingEl = appendMsg("assistant thinking", "Pensando…");
+
+    var preamble = "Você é o assistente financeiro dentro do app Caixa Mensal do usuário. Responda sempre em português do Brasil, tom direto e prático, no máximo 4 a 5 frases a menos que peçam mais detalhe. Use as ferramentas disponíveis para consultar números reais antes de responder — nunca estime ou invente valores. O mês em exibição no app agora é " + monthLabel(state.month) + " (" + state.month + ").";
+    var turns = state.assistantHistory.slice();
+    var content = turns.length ? question : (preamble + "\n\nPergunta do usuário: " + question);
+    turns.push({ role:"user", content: content });
+
+    try {
+      var result = await assistantSample(turns, {
+        tools: assistantTools(),
+        onText: function(u){
+          thinkingEl.className = "msg assistant";
+          thinkingEl.textContent = u.text;
+          document.getElementById("assistantMessages").scrollTop = 999999;
+        }
+      });
+      thinkingEl.className = "msg assistant";
+      thinkingEl.textContent = result.text;
+      state.assistantHistory = turns.concat([{ role:"assistant", content: result.text }]);
+      if (state.assistantHistory.length > 12) state.assistantHistory = state.assistantHistory.slice(-12);
+    } catch (e) {
+      thinkingEl.className = "msg assistant";
+      thinkingEl.textContent = (e && e.text) ? e.text : assistantErrorText(e);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+  document.getElementById("openAssistantBtn").addEventListener("click", function(){
+    document.getElementById("assistantOverlay").hidden = false;
+    document.getElementById("assistantInput").focus();
+  });
+  document.getElementById("assistantSendBtn").addEventListener("click", sendAssistantMessage);
+  document.getElementById("assistantInput").addEventListener("keydown", function(ev){
+    if (ev.key === "Enter"){ ev.preventDefault(); sendAssistantMessage(); }
   });
 
   // ---------- Close overlays ----------
