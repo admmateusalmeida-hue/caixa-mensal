@@ -239,8 +239,11 @@ button{font-family:inherit}
   padding:10px 14px;margin-bottom:16px;
 }
 .alert-banner strong{color:var(--danger);font-size:.85rem;display:block;margin-bottom:4px}
+.alert-banner.due-variant{background:var(--warn-soft);border-color:var(--warn-soft)}
+.alert-banner.due-variant strong{color:var(--warn)}
 .alert-chips{display:flex;flex-wrap:wrap;gap:6px}
 .alert-chip{background:var(--surface);color:var(--danger);border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:700}
+.alert-chip.warn{color:var(--warn)}
 
 .goal-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px}
 .goal-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
@@ -248,7 +251,7 @@ button{font-family:inherit}
   font-family:"Manrope",system-ui,sans-serif;font-weight:700;font-size:.98rem;border:none;background:transparent;
   color:var(--ink);padding:2px 0;flex:1;min-width:0;
 }
-.goal-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.goal-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:8px}
 .goal-fields label{display:flex;flex-direction:column;gap:3px;font-size:.68rem;color:var(--ink-dim);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
 .goal-fields input{border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:.84rem;background:var(--bg);color:var(--ink);font-family:inherit}
 .goal-stats{font-size:.78rem;color:var(--ink-dim);display:flex;justify-content:space-between;margin-bottom:4px}
@@ -485,17 +488,9 @@ button{font-family:inherit}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 3.5H5a1.5 1.5 0 0 0-1.5 1.5v6.5a1 1 0 0 0 .3.7l8.5 8.5a1.5 1.5 0 0 0 2.1 0l6.5-6.5a1.5 1.5 0 0 0 0-2.1l-8.5-8.5a1 1 0 0 0-.9-.1Z"/><circle cx="8.3" cy="8.3" r="1.2"/></svg>
         <span class="side-label">Categorias</span>
       </button>
-      <button class="side-btn" id="openGoalsBtn" title="Metas">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4.5c1.5-1 3.5-1 5 0s3.5 1 5 0v9c-1.5 1-3.5 1-5 0s-3.5-1-5 0Z"/></svg>
-        <span class="side-label">Metas</span>
-      </button>
-      <button class="side-btn" id="openInvestmentsBtn" title="Investimentos">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17 9 11l4 4 7.5-7.5"/><path d="M15 7.5h5.5V13"/></svg>
-        <span class="side-label">Investimentos</span>
-      </button>
-      <button class="side-btn" id="openReserveBtn" title="Reserva de emergência">
+      <button class="side-btn" id="openPlanningBtn" title="Planejamento: reserva, metas e investimentos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 19.5 6v6c0 5-3.5 7.7-7.5 9-4-1.3-7.5-4-7.5-9V6Z"/><path d="m9 12 2 2 4-4.3"/></svg>
-        <span class="side-label">Reserva</span>
+        <span class="side-label">Planejamento</span>
       </button>
       <button class="side-btn" id="annualBtn" title="Panorama anual">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg>
@@ -508,6 +503,10 @@ button{font-family:inherit}
       <button class="side-btn" id="exportBtn" title="Exportar CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 18.5h15"/></svg>
         <span class="side-label">Exportar CSV</span>
+      </button>
+      <button class="side-btn" id="backupBtn" title="Backup completo (JSON)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-8.98A5.5 5.5 0 0 1 17.5 8 4 4 0 0 1 17 16"/><path d="M12 11v7"/><path d="m9 15.5 3 2.5 3-2.5"/></svg>
+        <span class="side-label">Backup completo</span>
       </button>
     </nav>
     <div class="side-bottom">
@@ -536,6 +535,11 @@ button{font-family:inherit}
 
     <div class="app-content">
       <div id="dbBanner" class="banner" hidden>Abra este app dentro do Claude (não como link solto) para salvar seus lançamentos.</div>
+
+      <section class="alert-banner due-variant" id="dueSoonBanner" hidden>
+        <strong>Contas vencendo em breve</strong>
+        <div class="alert-chips" id="dueSoonChips"></div>
+      </section>
 
       <section class="alert-banner" id="budgetAlertBanner" hidden>
         <strong>Categorias acima do orçamento este mês</strong>
@@ -781,14 +785,39 @@ button{font-family:inherit}
     <div style="overflow-x:auto">
       <table class="annual-table" id="annualTable"></table>
     </div>
+
+    <h4 class="section-h">Evolução por categoria</h4>
+    <div class="field"><label>Categoria</label><select id="annualCategorySelect"></select></div>
+    <div id="annualCategoryChart"></div>
   </div>
 </div>
 
-<!-- Goals (metas financeiras) modal -->
-<div class="overlay" id="goalsOverlay" hidden>
-  <div class="sheet" style="max-width:560px">
-    <div class="sheet-head"><h3>Metas financeiras</h3><button class="close-x" data-close="goalsOverlay">×</button></div>
-    <p class="panel-sub" style="margin-top:-6px">Objetivos além da reserva de emergência — quitar dívidas, comprar um carro, etc.</p>
+<!-- Planning modal: Reserva + Metas + Investimentos -->
+<div class="overlay" id="planningOverlay" hidden>
+  <div class="sheet" style="max-width:600px">
+    <div class="sheet-head"><h3>Planejamento</h3><button class="close-x" data-close="planningOverlay">×</button></div>
+
+    <h4 class="section-h">Reserva de emergência</h4>
+    <div class="field-row">
+      <div class="field"><label>Meta (R$)</label><input id="reserveTargetInput" type="number" step="0.01" min="0"></div>
+      <div class="field"><label>Guardado até agora</label><input id="reserveSavedDisplay" disabled></div>
+    </div>
+    <div class="progress-bar" style="margin-bottom:14px"><div class="progress-fill" id="reserveModalFill" style="width:0%"></div></div>
+    <p class="panel-sub" id="reserveGapText" style="margin-top:-6px"></p>
+    <div class="field-row">
+      <div class="field"><label>Meses para atingir a meta</label><input id="reserveMonthsInput" type="number" min="1" value="24"></div>
+      <div class="field"><label>Aporte mensal sugerido</label><input id="reserveSuggestedDisplay" disabled></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Registrar aporte (R$)</label><input id="newContribAmount" type="number" step="0.01" min="0"></div>
+      <div class="field"><label>Mês</label><input id="newContribMonth" type="month"></div>
+    </div>
+    <div class="field"><label>Observação (opcional)</label><input id="newContribNote" placeholder="Ex.: 13º salário, sobra do mês…"></div>
+    <button class="btn btn-primary" id="addContribBtn" style="width:100%;margin-bottom:12px">Registrar aporte</button>
+    <div id="contributionsList" class="entry-list"></div>
+
+    <h4 class="section-h">Metas financeiras</h4>
+    <p class="panel-sub" style="margin-top:-6px">Objetivos além da reserva — quitar dívidas, comprar um carro, etc.</p>
     <div id="goalsList"></div>
     <div class="sub-add">
       <h4>Nova meta</h4>
@@ -796,15 +825,11 @@ button{font-family:inherit}
         <div class="field"><label>Nome</label><input id="newGoalName" placeholder="Ex.: Quitar empréstimo"></div>
         <div class="field"><label>Valor da meta (R$)</label><input id="newGoalTarget" type="number" step="0.01" min="0"></div>
       </div>
+      <div class="field"><label>Prazo (opcional)</label><input id="newGoalDate" type="month"></div>
       <button class="btn btn-primary" id="addGoalBtn" style="width:100%">Adicionar meta</button>
     </div>
-  </div>
-</div>
 
-<!-- Investments modal -->
-<div class="overlay" id="investmentsOverlay" hidden>
-  <div class="sheet" style="max-width:560px">
-    <div class="sheet-head"><h3>Investimentos</h3><button class="close-x" data-close="investmentsOverlay">×</button></div>
+    <h4 class="section-h">Investimentos</h4>
     <p class="panel-sub" style="margin-top:-6px">Registro do que você investe todo mês em renda fixa e renda variável.</p>
     <div class="inv-totals" id="invTotals"></div>
     <div class="sub-add" style="margin-top:0;padding-top:0;border-top:none">
@@ -822,7 +847,7 @@ button{font-family:inherit}
       </div>
       <button class="btn btn-primary" id="addInvBtn" style="width:100%">Registrar aporte</button>
     </div>
-    <h4 class="section-h">Histórico</h4>
+    <h4 class="section-h">Histórico de investimentos</h4>
     <div id="investmentsList"></div>
   </div>
 </div>
@@ -839,35 +864,6 @@ button{font-family:inherit}
   </div>
 </div>
 
-<!-- Reserve (emergency fund) modal -->
-<div class="overlay" id="reserveOverlay" hidden>
-  <div class="sheet" style="max-width:560px">
-    <div class="sheet-head"><h3>Reserva de emergência</h3><button class="close-x" data-close="reserveOverlay">×</button></div>
-
-    <div class="field-row">
-      <div class="field"><label>Meta (R$)</label><input id="reserveTargetInput" type="number" step="0.01" min="0"></div>
-      <div class="field"><label>Guardado até agora</label><input id="reserveSavedDisplay" disabled></div>
-    </div>
-    <div class="progress-bar" style="margin-bottom:14px"><div class="progress-fill" id="reserveModalFill" style="width:0%"></div></div>
-    <p class="panel-sub" id="reserveGapText" style="margin-top:-6px"></p>
-
-    <div class="field-row">
-      <div class="field"><label>Meses para atingir a meta</label><input id="reserveMonthsInput" type="number" min="1" value="24"></div>
-      <div class="field"><label>Aporte mensal sugerido</label><input id="reserveSuggestedDisplay" disabled></div>
-    </div>
-
-    <h4 class="section-h">Registrar aporte</h4>
-    <div class="field-row">
-      <div class="field"><label>Valor (R$)</label><input id="newContribAmount" type="number" step="0.01" min="0"></div>
-      <div class="field"><label>Mês</label><input id="newContribMonth" type="month"></div>
-    </div>
-    <div class="field"><label>Observação (opcional)</label><input id="newContribNote" placeholder="Ex.: 13º salário, sobra do mês…"></div>
-    <button class="btn btn-primary" id="addContribBtn" style="width:100%;margin-bottom:16px">Registrar aporte</button>
-
-    <h4 class="section-h">Aportes registrados</h4>
-    <div id="contributionsList" class="entry-list"></div>
-  </div>
-</div>
 
 <!-- Financial assistant chat modal -->
 <div class="overlay" id="assistantOverlay" hidden>
@@ -961,6 +957,7 @@ button{font-family:inherit}
     renderExpenseList([]);
     renderDashboardCharts();
     document.getElementById("budgetAlertBanner").hidden = true;
+    document.getElementById("dueSoonBanner").hidden = true;
     document.getElementById("dashRecentList").innerHTML = "";
     document.getElementById("dashInvestChart").innerHTML = "";
     document.getElementById("dashTrendChart").innerHTML = "";
@@ -1104,6 +1101,7 @@ button{font-family:inherit}
     renderCategoriesManager();
     renderDashboardCharts();
     renderBudgetAlerts();
+    renderDueSoonAlerts();
     renderDashRecent();
   }
   function renderDashRecent(){
@@ -1142,6 +1140,28 @@ button{font-family:inherit}
     document.getElementById("budgetAlertChips").innerHTML = over.map(function(x){
       var pct = Math.round((x.spent/x.budget)*100);
       return '<span class="alert-chip">'+escapeHtml(x.name)+' — '+pct+'% ('+fmtBRL.format(x.over)+' acima)</span>';
+    }).join("");
+  }
+  function renderDueSoonAlerts(){
+    var banner = document.getElementById("dueSoonBanner");
+    var today = new Date();
+    if (currentMonthStr(today) !== state.month){ banner.hidden = true; return; }
+    var todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    var items = state.entries.filter(function(e){
+      return e.kind === "fixa" && e.type === "despesa" && e.status === "pendente" && e.dueDay;
+    }).map(function(e){
+      var dueDate = new Date(today.getFullYear(), today.getMonth(), e.dueDay);
+      var diffDays = Math.round((dueDate - todayStart) / 86400000);
+      return { name:e.description, amount:Number(e.amount)||0, diffDays:diffDays };
+    }).filter(function(x){ return x.diffDays <= 5; }).sort(function(a,b){ return a.diffDays-b.diffDays; });
+    if (!items.length){ banner.hidden = true; return; }
+    banner.hidden = false;
+    document.getElementById("dueSoonChips").innerHTML = items.map(function(x){
+      var label = x.diffDays < 0 ? "vencida há " + Math.abs(x.diffDays) + (Math.abs(x.diffDays)===1?" dia":" dias") :
+        x.diffDays === 0 ? "vence hoje" :
+        "vence em " + x.diffDays + (x.diffDays===1?" dia":" dias");
+      var cls = x.diffDays <= 0 ? "" : "warn";
+      return '<span class="alert-chip '+cls+'">'+escapeHtml(x.name)+' · '+fmtBRL.format(x.amount)+' · '+label+'</span>';
     }).join("");
   }
 
@@ -1751,9 +1771,11 @@ button{font-family:inherit}
   var annualOverlay = document.getElementById("annualOverlay");
   document.getElementById("annualBtn").addEventListener("click", function(){
     state.annualYear = Number(state.month.slice(0,4));
+    populateAnnualCategorySelect();
     loadAnnual(state.annualYear);
     annualOverlay.hidden = false;
   });
+  document.getElementById("annualCategorySelect").addEventListener("change", renderAnnualCategoryChart);
   document.getElementById("annualPrev").addEventListener("click", function(){ loadAnnual(state.annualYear-1); });
   document.getElementById("annualNext").addEventListener("click", function(){ loadAnnual(state.annualYear+1); });
   function renderTrendChart(byMonth){
@@ -1839,24 +1861,33 @@ button{font-family:inherit}
       }
     }).catch(function(e){ console.error("dashboard trend", e); });
   }
+  var annualCategoryData = null;
   function loadAnnual(year){
     state.annualYear = year;
     document.getElementById("annualYearLabel").textContent = String(year);
     var table = document.getElementById("annualTable");
     table.innerHTML = '<tr><td colspan="4" class="empty">Carregando…</td></tr>';
     document.getElementById("trendChartWrap").innerHTML = "";
+    document.getElementById("annualCategoryChart").innerHTML = "";
+    annualCategoryData = null;
     if (!state.db) return;
     var start = year + "-01", end = year + "-12";
     state.db.collection("entries").where("month",">=",start).where("month","<=",end).get().then(function(snap){
       var byMonth = {};
-      for (var i=1;i<=12;i++){ byMonth[String(i).padStart(2,"0")] = {entradas:0, saidas:0}; }
+      var catByMonth = {};
+      for (var i=1;i<=12;i++){ byMonth[String(i).padStart(2,"0")] = {entradas:0, saidas:0}; catByMonth[String(i).padStart(2,"0")] = {}; }
       snap.docs.forEach(function(d){
         var e = d.data();
         if (e.status === "pulado") return;
         var mm = (e.month||"").slice(5,7);
         if (!byMonth[mm]) return;
         var v = Number(e.amount)||0;
-        if (e.type === "receita") byMonth[mm].entradas += v; else byMonth[mm].saidas += v;
+        if (e.type === "receita") byMonth[mm].entradas += v;
+        else {
+          byMonth[mm].saidas += v;
+          var cat = e.category || "Outro";
+          catByMonth[mm][cat] = (catByMonth[mm][cat]||0) + v;
+        }
       });
       var currentMonth = state.month;
       var rows = MONTHS_SHORT.map(function(name, idx){
@@ -1871,9 +1902,42 @@ button{font-family:inherit}
       }).join("");
       table.innerHTML = '<tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Diferença</th></tr>' + rows;
       renderTrendChart(byMonth);
+      annualCategoryData = catByMonth;
+      renderAnnualCategoryChart();
     }).catch(function(e){
       table.innerHTML = '<tr><td colspan="4" class="empty">Erro ao carregar: '+escapeHtml(e.message)+'</td></tr>';
     });
+  }
+  function populateAnnualCategorySelect(){
+    var sel = document.getElementById("annualCategorySelect");
+    var prev = sel.value;
+    var cats = state.categories.filter(function(c){ return c.type!=="receita"; });
+    if (!cats.length){ sel.innerHTML = '<option value="">Nenhuma categoria cadastrada</option>'; return; }
+    sel.innerHTML = cats.map(function(c){ return '<option value="'+escapeHtml(c.name)+'">'+escapeHtml(c.name)+'</option>'; }).join("");
+    if (prev && cats.some(function(c){ return c.name===prev; })) sel.value = prev;
+  }
+  function renderAnnualCategoryChart(){
+    var el = document.getElementById("annualCategoryChart");
+    var sel = document.getElementById("annualCategorySelect");
+    var cat = sel ? sel.value : "";
+    if (!annualCategoryData || !cat){ el.innerHTML = ""; return; }
+    var totals = MONTHS_SHORT.map(function(name, idx){
+      var mm = String(idx+1).padStart(2,"0");
+      return (annualCategoryData[mm] && annualCategoryData[mm][cat]) || 0;
+    });
+    var max = Math.max.apply(null, totals.concat([0])) || 1;
+    var allZero = totals.every(function(t){ return t===0; });
+    var currentMm = state.month.slice(5,7);
+    var currentYear = state.month.slice(0,4);
+    var bars = MONTHS_SHORT.map(function(name, idx){
+      var mm = String(idx+1).padStart(2,"0");
+      var v = totals[idx];
+      var pct = v>0 ? Math.max(4, Math.round((v/max)*100)) : 0;
+      var isCurrent = (String(state.annualYear)===currentYear && mm===currentMm);
+      return '<div class="mini-bar-col"><div class="mini-bar-track"><div class="mini-bar-fill'+(isCurrent?" current":"")+'" style="height:'+pct+'%" title="'+fmtBRL.format(v)+'"></div></div><span class="mini-bar-label">'+name+'</span></div>';
+    }).join("");
+    el.innerHTML = '<div class="mini-bar-chart">'+bars+'</div>' +
+      (allZero ? '<p class="empty" style="padding-top:8px">Nada gasto nessa categoria em '+state.annualYear+'.</p>' : '');
   }
 
   // ---------- Reserve (emergency fund) ----------
@@ -1936,11 +2000,6 @@ button{font-family:inherit}
       });
     }
   }
-  document.getElementById("openReserveBtn").addEventListener("click", function(){
-    document.getElementById("newContribMonth").value = state.month;
-    renderReserve();
-    document.getElementById("reserveOverlay").hidden = false;
-  });
   document.getElementById("reserveTargetInput").addEventListener("change", function(){
     if (!state.db){ alert("Abra este app dentro do Claude para salvar."); return; }
     var val = parseFloat(this.value) || 0;
@@ -1989,6 +2048,14 @@ button{font-family:inherit}
       var target = Number(g.targetAmount)||0;
       var pct = target>0 ? Math.min(100, Math.round((saved/target)*100)) : 0;
       var contribs = state.goalContribs.filter(function(c){ return c.goalId===g.id; }).slice().reverse();
+      var gap = Math.max(0, target-saved);
+      var paceTxt = "";
+      if (g.targetDate){
+        var monthsLeft = monthsBetween(state.month, g.targetDate) + 1;
+        if (gap <= 0) paceTxt = "Meta atingida";
+        else if (monthsLeft <= 0) paceTxt = "Prazo (" + monthLabel(g.targetDate) + ") já passou";
+        else paceTxt = "Faltam " + monthsLeft + " " + (monthsLeft===1?"mês":"meses") + " · " + fmtBRL.format(gap/monthsLeft) + "/mês pra bater";
+      }
       return '<div class="goal-card" data-id="'+g.id+'">' +
         '<div class="goal-card-top">' +
         '<input data-f="name" value="'+escapeHtml(g.name)+'">' +
@@ -1997,9 +2064,11 @@ button{font-family:inherit}
         '<div class="goal-fields">' +
         '<label>Meta (R$)<input data-f="targetAmount" type="number" step="0.01" min="0" value="'+target+'"></label>' +
         '<label>Guardado<input value="'+fmtBRL.format(saved)+'" disabled></label>' +
+        '<label>Prazo<input data-f="targetDate" type="month" value="'+(g.targetDate||"")+'"></label>' +
         '</div>' +
-        '<div class="goal-stats"><span>'+pct+'% da meta</span><span>Falta '+fmtBRL.format(Math.max(0,target-saved))+'</span></div>' +
+        '<div class="goal-stats"><span>'+pct+'% da meta</span><span>Falta '+fmtBRL.format(gap)+'</span></div>' +
         '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
+        (paceTxt ? '<div class="goal-stats" style="margin-top:6px;color:var(--accent)"><span>'+paceTxt+'</span></div>' : '') +
         '<div class="goal-contrib-row">' +
         '<input data-role="amount" type="number" step="0.01" min="0" placeholder="Valor (R$)">' +
         '<input data-role="month" type="month" value="'+state.month+'">' +
@@ -2052,18 +2121,16 @@ button{font-family:inherit}
       });
     });
   }
-  document.getElementById("openGoalsBtn").addEventListener("click", function(){
-    renderGoalsManager();
-    document.getElementById("goalsOverlay").hidden = false;
-  });
   document.getElementById("addGoalBtn").addEventListener("click", function(){
     if (!state.db){ alert("Abra este app dentro do Claude para salvar."); return; }
     var name = document.getElementById("newGoalName").value.trim();
     var target = parseFloat(document.getElementById("newGoalTarget").value);
+    var targetDate = document.getElementById("newGoalDate").value || null;
     if (!name){ alert("Dê um nome para a meta."); return; }
     if (!target || target<=0){ alert("Informe um valor de meta válido."); return; }
-    state.db.collection("goals").add({ name:name, targetAmount:target, createdAt: nowIso() }).then(function(){
+    state.db.collection("goals").add({ name:name, targetAmount:target, targetDate:targetDate, createdAt: nowIso() }).then(function(){
       document.getElementById("newGoalName").value = "";
+      document.getElementById("newGoalDate").value = "";
       document.getElementById("newGoalTarget").value = "";
     }).catch(function(e){ alert("Erro ao adicionar: "+e.message); });
   });
@@ -2128,10 +2195,13 @@ button{font-family:inherit}
       });
     });
   }
-  document.getElementById("openInvestmentsBtn").addEventListener("click", function(){
+  document.getElementById("openPlanningBtn").addEventListener("click", function(){
+    document.getElementById("newContribMonth").value = state.month;
     document.getElementById("newInvMonth").value = state.month;
+    renderReserve();
+    renderGoalsManager();
     renderInvestmentsManager();
-    document.getElementById("investmentsOverlay").hidden = false;
+    document.getElementById("planningOverlay").hidden = false;
   });
   document.getElementById("newInvTypeSeg").addEventListener("click", function(ev){
     var b = ev.target.closest("button"); if (!b) return;
@@ -2354,6 +2424,35 @@ button{font-family:inherit}
         return r.map(function(v){ return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'; }).join(";");
       }).join("\r\n");
       dl.save({filename: "caixa-mensal-"+state.month+".csv", data: csv}).catch(function(e){
+        if (e && e.code !== "declined") alert("Erro ao exportar: " + (e.message||e.code));
+      });
+    });
+  });
+
+  // ---------- Full JSON backup ----------
+  document.getElementById("backupBtn").addEventListener("click", function(){
+    if (!state.db){ alert("Abra este app dentro do Claude para exportar."); return; }
+    if (!window.claude || !window.claude.use){ alert("Backup indisponível nesta visualização."); return; }
+    window.claude.use("downloads").then(async function(dl){
+      if (!dl){ alert("Backup indisponível nesta visualização."); return; }
+      var collectionsToBackup = ["entries","recurring","installments","categories","goals","goalContributions","investments","reserveContributions"];
+      var bundle = { exportedAt: nowIso(), app: "Caixa Mensal", version: 1 };
+      try {
+        for (var i=0;i<collectionsToBackup.length;i++){
+          var name = collectionsToBackup[i];
+          var snap = await state.db.collection(name).get();
+          bundle[name] = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+        }
+        var reserveSnap = await state.db.doc("reserve/main").get();
+        bundle.reserve = reserveSnap.exists ? reserveSnap.data() : null;
+      } catch(e){
+        alert("Erro ao coletar dados para o backup: " + e.message);
+        return;
+      }
+      var json = JSON.stringify(bundle, null, 2);
+      var today = new Date();
+      var dateStr = today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+      dl.save({ filename: "caixa-mensal-backup-"+dateStr+".json", data: json }).catch(function(e){
         if (e && e.code !== "declined") alert("Erro ao exportar: " + (e.message||e.code));
       });
     });
