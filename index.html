@@ -189,6 +189,54 @@ button{font-family:inherit}
 .assistant-input-row input{flex:1;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:.9rem;background:var(--bg);color:var(--ink);font-family:inherit}
 .assistant-empty{color:var(--ink-dim);font-size:.82rem;padding:6px 2px 14px}
 
+.alert-banner{
+  background:var(--danger-soft);border:1px solid var(--danger-soft);border-radius:12px;
+  padding:10px 14px;margin-bottom:16px;
+}
+.alert-banner strong{color:var(--danger);font-size:.85rem;display:block;margin-bottom:4px}
+.alert-chips{display:flex;flex-wrap:wrap;gap:6px}
+.alert-chip{background:var(--surface);color:var(--danger);border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:600}
+
+.goal-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px}
+.goal-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.goal-card-top input[data-f="name"]{
+  font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:.98rem;border:none;background:transparent;
+  color:var(--ink);padding:2px 0;flex:1;min-width:0;
+}
+.goal-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.goal-fields label{display:flex;flex-direction:column;gap:3px;font-size:.68rem;color:var(--ink-dim);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.goal-fields input{border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:.84rem;background:var(--bg);color:var(--ink);font-family:inherit}
+.goal-stats{font-size:.78rem;color:var(--ink-dim);display:flex;justify-content:space-between;margin-bottom:4px}
+.goal-contrib-row{display:flex;gap:8px;margin-top:8px}
+.goal-contrib-row input{border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:.82rem;background:var(--bg);color:var(--ink);font-family:inherit}
+.goal-contrib-row input[data-role="amount"]{width:100px}
+.goal-contrib-row input[data-role="month"]{width:130px}
+.goal-contrib-list{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.goal-contrib-item{display:flex;justify-content:space-between;align-items:center;font-size:.76rem;color:var(--ink-dim);padding:3px 0}
+.goal-contrib-item .amt{color:var(--good);font-weight:500}
+.goal-contrib-item button{background:none;border:none;color:var(--ink-dim);cursor:pointer;padding:2px 4px}
+
+.inv-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.inv-row .inv-tipo{font-weight:600}
+.inv-row .inv-tipo.rf{color:var(--series-1)}
+.inv-row .inv-tipo.rv{color:var(--series-2)}
+.inv-totals{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.inv-total-card{flex:1;min-width:130px;background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.inv-total-card .lbl{font-size:.68rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.03em;font-weight:700}
+.inv-total-card .val{font-family:"IBM Plex Mono",monospace;font-weight:600;margin-top:3px}
+
+.trend-chart-wrap{margin-bottom:16px}
+.trend-svg{width:100%;height:auto;display:block}
+.trend-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:.76rem;color:var(--ink-dim)}
+.trend-legend .item{display:flex;align-items:center;gap:5px}
+.trend-legend .sw{width:10px;height:10px;border-radius:3px}
+
+.share-note{
+  background:var(--accent-soft);border:1px solid var(--accent-soft);border-radius:12px;
+  padding:12px 14px;font-size:.83rem;color:var(--ink);line-height:1.5;
+}
+.share-note strong{color:var(--accent)}
+
 @media (max-width:760px){
   .dashboard-grid{grid-template-columns:1fr}
 }
@@ -360,6 +408,9 @@ button{font-family:inherit}
       <button class="btn btn-ghost" id="manageCategoriesBtn">Categorias</button>
       <button class="btn btn-ghost" id="annualBtn">Panorama anual</button>
       <button class="btn btn-ghost" id="openReserveBtn">Reserva</button>
+      <button class="btn btn-ghost" id="openGoalsBtn">Metas</button>
+      <button class="btn btn-ghost" id="openInvestmentsBtn">Investimentos</button>
+      <button class="btn btn-ghost" id="openShareBtn">Compartilhar</button>
       <button class="btn btn-primary" id="openAssistantBtn">Assistente</button>
       <button class="btn btn-ghost" id="exportBtn">Exportar CSV</button>
     </div>
@@ -372,6 +423,11 @@ button{font-family:inherit}
   <section class="reserve-banner" id="reserveBanner">
     <div class="reserve-info"><strong>Reserva de emergência</strong><span id="reserveText">—</span></div>
     <div class="reserve-bar-wrap"><div class="progress-bar"><div class="progress-fill" id="reserveProgressFill" style="width:0%"></div></div></div>
+  </section>
+
+  <section class="alert-banner" id="budgetAlertBanner" hidden>
+    <strong>Categorias acima do orçamento este mês</strong>
+    <div class="alert-chips" id="budgetAlertChips"></div>
   </section>
 
   <section class="dashboard-grid">
@@ -568,8 +624,64 @@ button{font-family:inherit}
       <span class="label" id="annualYearLabel">2026</span>
       <button id="annualNext" aria-label="Próximo ano">›</button>
     </div>
+    <div class="trend-chart-wrap" id="trendChartWrap"></div>
     <div style="overflow-x:auto">
       <table class="annual-table" id="annualTable"></table>
+    </div>
+  </div>
+</div>
+
+<!-- Goals (metas financeiras) modal -->
+<div class="overlay" id="goalsOverlay" hidden>
+  <div class="sheet" style="max-width:560px">
+    <div class="sheet-head"><h3>Metas financeiras</h3><button class="close-x" data-close="goalsOverlay">×</button></div>
+    <p class="panel-sub" style="margin-top:-6px">Objetivos além da reserva de emergência — quitar dívidas, comprar um carro, etc.</p>
+    <div id="goalsList"></div>
+    <div class="sub-add">
+      <h4>Nova meta</h4>
+      <div class="field-row">
+        <div class="field"><label>Nome</label><input id="newGoalName" placeholder="Ex.: Quitar empréstimo"></div>
+        <div class="field"><label>Valor da meta (R$)</label><input id="newGoalTarget" type="number" step="0.01" min="0"></div>
+      </div>
+      <button class="btn btn-primary" id="addGoalBtn" style="width:100%">Adicionar meta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Investments modal -->
+<div class="overlay" id="investmentsOverlay" hidden>
+  <div class="sheet" style="max-width:560px">
+    <div class="sheet-head"><h3>Investimentos</h3><button class="close-x" data-close="investmentsOverlay">×</button></div>
+    <p class="panel-sub" style="margin-top:-6px">Registro do que você investe todo mês em renda fixa e renda variável.</p>
+    <div class="inv-totals" id="invTotals"></div>
+    <div class="sub-add" style="margin-top:0;padding-top:0;border-top:none">
+      <h4>Novo aporte</h4>
+      <div class="field">
+        <label>Tipo</label>
+        <div class="seg" id="newInvTypeSeg">
+          <button type="button" data-val="renda_fixa" class="active">Renda fixa</button>
+          <button type="button" data-val="renda_variavel">Renda variável</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Valor (R$)</label><input id="newInvAmount" type="number" step="0.01" min="0"></div>
+        <div class="field"><label>Mês</label><input id="newInvMonth" type="month"></div>
+      </div>
+      <button class="btn btn-primary" id="addInvBtn" style="width:100%">Registrar aporte</button>
+    </div>
+    <h4 class="section-h">Histórico</h4>
+    <div id="investmentsList"></div>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div class="overlay" id="shareOverlay" hidden>
+  <div class="sheet" style="max-width:480px">
+    <div class="sheet-head"><h3>Compartilhar com o parceiro(a)</h3><button class="close-x" data-close="shareOverlay">×</button></div>
+    <div class="share-note">
+      <p style="margin:0 0 10px">Este app já está pronto para uso a dois — quem tiver o link com permissão de edição enxerga e edita os <strong>mesmos</strong> lançamentos, contas fixas, metas e reserva, em tempo real.</p>
+      <p style="margin:0 0 10px">Para liberar o acesso: abra o menu de compartilhamento desta página (no Claude, geralmente o botão de compartilhar no topo do artifact) e convide a pessoa com permissão de <strong>edição</strong> — não apenas visualização, senão ela só consegue ver, sem lançar nada.</p>
+      <p style="margin:0">Isso é feito na interface do Claude, fora deste app — não em um botão aqui dentro.</p>
     </div>
   </div>
 </div>
@@ -633,7 +745,9 @@ button{font-family:inherit}
     unsubEntries:null, unsubRecurring:null, unsubInstallments:null, unsubCategories:null,
     categoriesSeeded:false, annualYear: Number(currentMonthStr(new Date()).slice(0,4)),
     reserveTarget: 0, reserveContribs: [], unsubReserveMain:null, unsubReserveContribs:null, reserveSeeded:false,
-    assistantHistory: []
+    assistantHistory: [],
+    goals: [], goalContribs: [], unsubGoals:null, unsubGoalContribs:null,
+    investments: [], unsubInvestments: null
   };
   var DEFAULT_RESERVE_TARGET = 60000;
   var assistantSample = null;
@@ -682,6 +796,8 @@ button{font-family:inherit}
       subscribeRecurring();
       subscribeInstallments();
       subscribeReserve();
+      subscribeGoals();
+      subscribeInvestments();
       loadMonth(state.month);
     }).catch(function(){ showNoDb(); });
   }
@@ -691,6 +807,7 @@ button{font-family:inherit}
     renderIncomeList([]);
     renderExpenseList([]);
     renderDashboardCharts();
+    document.getElementById("budgetAlertBanner").hidden = true;
   }
 
   // ---------- Categories (with budgets + income origins) ----------
@@ -706,6 +823,7 @@ button{font-family:inherit}
       refreshCategoryDatalists();
       renderCategoriesManager();
       renderDashboardCharts();
+      renderBudgetAlerts();
     }, function(err){ console.error("categories snapshot", err); });
   }
   function seedDefaultCategories(){
@@ -827,6 +945,27 @@ button{font-family:inherit}
     updateFixedPendingBadge();
     renderCategoriesManager();
     renderDashboardCharts();
+    renderBudgetAlerts();
+  }
+  function renderBudgetAlerts(){
+    var spentByCat = {};
+    state.entries.forEach(function(e){
+      if (e.type !== "despesa" || e.status === "pulado") return;
+      var k = e.category || "Outro";
+      spentByCat[k] = (spentByCat[k]||0) + (Number(e.amount)||0);
+    });
+    var over = state.categories.filter(function(c){ return c.type!=="receita"; }).map(function(c){
+      var spent = spentByCat[c.name] || 0;
+      var budget = Number(c.budget) || 0;
+      return { name:c.name, spent:spent, budget:budget, over: spent-budget };
+    }).filter(function(x){ return x.budget > 0 && x.over > 0; });
+    var banner = document.getElementById("budgetAlertBanner");
+    if (!over.length){ banner.hidden = true; return; }
+    banner.hidden = false;
+    document.getElementById("budgetAlertChips").innerHTML = over.map(function(x){
+      var pct = Math.round((x.spent/x.budget)*100);
+      return '<span class="alert-chip">'+escapeHtml(x.name)+' — '+pct+'% ('+fmtBRL.format(x.over)+' acima)</span>';
+    }).join("");
   }
 
   function updateFixedPendingBadge(){
@@ -1437,11 +1576,63 @@ button{font-family:inherit}
   });
   document.getElementById("annualPrev").addEventListener("click", function(){ loadAnnual(state.annualYear-1); });
   document.getElementById("annualNext").addEventListener("click", function(){ loadAnnual(state.annualYear+1); });
+  function renderTrendChart(byMonth){
+    var wrap = document.getElementById("trendChartWrap");
+    var months = MONTHS_SHORT.map(function(name, idx){
+      var mm = String(idx+1).padStart(2,"0");
+      var m = byMonth[mm];
+      return { name:name, entradas:m.entradas, saidas:m.saidas, saldo:m.entradas-m.saidas };
+    });
+    var maxVal = 0, minVal = 0;
+    months.forEach(function(m){
+      maxVal = Math.max(maxVal, m.entradas, m.saidas, m.saldo);
+      minVal = Math.min(minVal, m.saldo);
+    });
+    if (maxVal === 0 && minVal === 0){
+      wrap.innerHTML = '<p class="empty">Sem dados suficientes para o gráfico ainda.</p>';
+      return;
+    }
+    var w = 560, h = 200, padL = 8, padR = 8, padT = 10, padB = 20;
+    var plotW = w - padL - padR, plotH = h - padT - padB;
+    var range = (maxVal - minVal) || 1;
+    function xAt(i){ return padL + (i/(months.length-1)) * plotW; }
+    function yAt(v){ return padT + plotH - ((v - minVal)/range) * plotH; }
+    var zeroY = yAt(0);
+
+    function pathFor(key){
+      return months.map(function(m,i){ return (i===0?"M":"L") + xAt(i).toFixed(1) + "," + yAt(m[key]).toFixed(1); }).join(" ");
+    }
+    function dotsFor(key, colorVar){
+      return months.map(function(m,i){
+        return '<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(m[key]).toFixed(1)+'" r="3.5" fill="'+colorVar+'" stroke="var(--surface)" stroke-width="1.5"><title>'+m.name+': '+fmtBRL.format(m[key])+'</title></circle>';
+      }).join("");
+    }
+    var series = [
+      {key:"entradas", label:"Entradas", color:"var(--series-1)"},
+      {key:"saidas", label:"Saídas", color:"var(--series-2)"},
+      {key:"saldo", label:"Saldo", color:"var(--series-3)"}
+    ];
+    var lines = series.map(function(s){
+      return '<path d="'+pathFor(s.key)+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>' + dotsFor(s.key, s.color);
+    }).join("");
+    var xLabels = months.map(function(m,i){
+      return '<text x="'+xAt(i).toFixed(1)+'" y="'+(h-4)+'" font-size="9" fill="var(--ink-dim)" text-anchor="middle">'+m.name+'</text>';
+    }).join("");
+    var zeroLine = (minVal < 0) ? '<line x1="'+padL+'" y1="'+zeroY.toFixed(1)+'" x2="'+(w-padR)+'" y2="'+zeroY.toFixed(1)+'" stroke="var(--border)" stroke-width="1"></line>' : "";
+    wrap.innerHTML =
+      '<svg viewBox="0 0 '+w+' '+h+'" class="trend-svg" preserveAspectRatio="xMidYMid meet">' +
+      zeroLine + lines + xLabels +
+      '</svg>' +
+      '<div class="trend-legend">' + series.map(function(s){
+        return '<span class="item"><span class="sw" style="background:'+s.color+'"></span>'+s.label+'</span>';
+      }).join("") + '</div>';
+  }
   function loadAnnual(year){
     state.annualYear = year;
     document.getElementById("annualYearLabel").textContent = String(year);
     var table = document.getElementById("annualTable");
     table.innerHTML = '<tr><td colspan="4" class="empty">Carregando…</td></tr>';
+    document.getElementById("trendChartWrap").innerHTML = "";
     if (!state.db) return;
     var start = year + "-01", end = year + "-12";
     state.db.collection("entries").where("month",">=",start).where("month","<=",end).get().then(function(snap){
@@ -1467,6 +1658,7 @@ button{font-family:inherit}
           '<td class="num '+(diff>=0?"pos":"neg")+'">'+fmtBRL.format(diff)+'</td></tr>';
       }).join("");
       table.innerHTML = '<tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Diferença</th></tr>' + rows;
+      renderTrendChart(byMonth);
     }).catch(function(e){
       table.innerHTML = '<tr><td colspan="4" class="empty">Erro ao carregar: '+escapeHtml(e.message)+'</td></tr>';
     });
@@ -1555,6 +1747,180 @@ button{font-family:inherit}
       document.getElementById("newContribAmount").value = "";
       document.getElementById("newContribNote").value = "";
     }).catch(function(e){ alert("Erro ao registrar: "+e.message); });
+  });
+
+  // ---------- Goals (metas financeiras) ----------
+  function subscribeGoals(){
+    if (state.unsubGoals) state.unsubGoals();
+    state.unsubGoals = state.db.collection("goals").orderBy("createdAt","asc").onSnapshot(function(snap){
+      state.goals = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderGoalsManager();
+    }, function(err){ console.error("goals snapshot", err); });
+    if (state.unsubGoalContribs) state.unsubGoalContribs();
+    state.unsubGoalContribs = state.db.collection("goalContributions").orderBy("createdAt","asc").onSnapshot(function(snap){
+      state.goalContribs = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderGoalsManager();
+    }, function(err){ console.error("goalContributions snapshot", err); });
+  }
+  function goalSavedTotal(goalId){
+    return state.goalContribs.filter(function(c){ return c.goalId===goalId; }).reduce(function(s,c){ return s+(Number(c.amount)||0); }, 0);
+  }
+  function renderGoalsManager(){
+    var el = document.getElementById("goalsList");
+    if (!el) return;
+    if (!state.goals.length){
+      el.innerHTML = '<p class="empty">Nenhuma meta cadastrada ainda.</p>';
+      return;
+    }
+    el.innerHTML = state.goals.map(function(g){
+      var saved = goalSavedTotal(g.id);
+      var target = Number(g.targetAmount)||0;
+      var pct = target>0 ? Math.min(100, Math.round((saved/target)*100)) : 0;
+      var contribs = state.goalContribs.filter(function(c){ return c.goalId===g.id; }).slice().reverse();
+      return '<div class="goal-card" data-id="'+g.id+'">' +
+        '<div class="goal-card-top">' +
+        '<input data-f="name" value="'+escapeHtml(g.name)+'">' +
+        '<button class="icon-btn" data-del-goal="'+g.id+'" aria-label="Excluir meta">'+ICON_TRASH+'</button>' +
+        '</div>' +
+        '<div class="goal-fields">' +
+        '<label>Meta (R$)<input data-f="targetAmount" type="number" step="0.01" min="0" value="'+target+'"></label>' +
+        '<label>Guardado<input value="'+fmtBRL.format(saved)+'" disabled></label>' +
+        '</div>' +
+        '<div class="goal-stats"><span>'+pct+'% da meta</span><span>Falta '+fmtBRL.format(Math.max(0,target-saved))+'</span></div>' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
+        '<div class="goal-contrib-row">' +
+        '<input data-role="amount" type="number" step="0.01" min="0" placeholder="Valor (R$)">' +
+        '<input data-role="month" type="month" value="'+state.month+'">' +
+        '<button class="btn btn-sm btn-primary" data-addcontrib="'+g.id+'">+ Aporte</button>' +
+        '</div>' +
+        '<div class="goal-contrib-list">' + (contribs.length ? contribs.map(function(c){
+          return '<div class="goal-contrib-item"><span>'+escapeHtml(c.month||"")+'</span>' +
+            '<span class="amt">+ '+fmtBRL.format(Number(c.amount)||0)+'</span>' +
+            '<button data-del-contrib="'+c.id+'" aria-label="Excluir aporte">'+ICON_TRASH+'</button></div>';
+        }).join("") : '<div class="goal-contrib-item"><span>Nenhum aporte ainda</span></div>') + '</div>' +
+        '</div>';
+    }).join("");
+
+    el.querySelectorAll('.goal-card input[data-f]').forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var id = inp.closest(".goal-card").getAttribute("data-id");
+        var field = inp.getAttribute("data-f");
+        var val = field==="targetAmount" ? (parseFloat(inp.value)||0) : inp.value.trim();
+        var payload = {}; payload[field] = val;
+        state.db.doc("goals/"+id).update(payload).catch(function(e){ alert("Erro ao salvar: "+e.message); });
+      });
+    });
+    el.querySelectorAll('[data-del-goal]').forEach(function(b){
+      b.addEventListener("click", function(){
+        if (!confirm("Excluir esta meta? Os aportes registrados nela também somem.")) return;
+        var id = b.getAttribute("data-del-goal");
+        state.db.doc("goals/"+id).delete().catch(function(e){ alert("Erro: "+e.message); });
+        state.goalContribs.filter(function(c){ return c.goalId===id; }).forEach(function(c){
+          state.db.doc("goalContributions/"+c.id).delete().catch(function(){});
+        });
+      });
+    });
+    el.querySelectorAll('[data-addcontrib]').forEach(function(b){
+      b.addEventListener("click", function(){
+        var card = b.closest(".goal-card");
+        var goalId = b.getAttribute("data-addcontrib");
+        var amountInp = card.querySelector('[data-role="amount"]');
+        var monthInp = card.querySelector('[data-role="month"]');
+        var amount = parseFloat(amountInp.value);
+        if (!amount || amount<=0){ alert("Informe um valor válido."); return; }
+        state.db.collection("goalContributions").add({
+          goalId: goalId, amount: amount, month: monthInp.value||state.month, createdAt: nowIso()
+        }).then(function(){ amountInp.value = ""; }).catch(function(e){ alert("Erro: "+e.message); });
+      });
+    });
+    el.querySelectorAll('[data-del-contrib]').forEach(function(b){
+      b.addEventListener("click", function(){
+        if (!confirm("Excluir este aporte?")) return;
+        state.db.doc("goalContributions/"+b.getAttribute("data-del-contrib")).delete().catch(function(e){ alert("Erro: "+e.message); });
+      });
+    });
+  }
+  document.getElementById("openGoalsBtn").addEventListener("click", function(){
+    renderGoalsManager();
+    document.getElementById("goalsOverlay").hidden = false;
+  });
+  document.getElementById("addGoalBtn").addEventListener("click", function(){
+    if (!state.db){ alert("Abra este app dentro do Claude para salvar."); return; }
+    var name = document.getElementById("newGoalName").value.trim();
+    var target = parseFloat(document.getElementById("newGoalTarget").value);
+    if (!name){ alert("Dê um nome para a meta."); return; }
+    if (!target || target<=0){ alert("Informe um valor de meta válido."); return; }
+    state.db.collection("goals").add({ name:name, targetAmount:target, createdAt: nowIso() }).then(function(){
+      document.getElementById("newGoalName").value = "";
+      document.getElementById("newGoalTarget").value = "";
+    }).catch(function(e){ alert("Erro ao adicionar: "+e.message); });
+  });
+
+  // ---------- Investments ----------
+  function subscribeInvestments(){
+    if (state.unsubInvestments) state.unsubInvestments();
+    state.unsubInvestments = state.db.collection("investments").orderBy("createdAt","asc").onSnapshot(function(snap){
+      state.investments = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderInvestmentsManager();
+    }, function(err){ console.error("investments snapshot", err); });
+  }
+  function renderInvestmentsManager(){
+    var totalsEl = document.getElementById("invTotals");
+    var listEl = document.getElementById("investmentsList");
+    if (!totalsEl || !listEl) return;
+    var totalRF=0, totalRV=0;
+    state.investments.forEach(function(i){
+      if (i.tipo==="renda_fixa") totalRF += Number(i.amount)||0;
+      else totalRV += Number(i.amount)||0;
+    });
+    totalsEl.innerHTML =
+      '<div class="inv-total-card"><div class="lbl">Renda fixa</div><div class="val num">'+fmtBRL.format(totalRF)+'</div></div>' +
+      '<div class="inv-total-card"><div class="lbl">Renda variável</div><div class="val num">'+fmtBRL.format(totalRV)+'</div></div>' +
+      '<div class="inv-total-card"><div class="lbl">Total investido</div><div class="val num">'+fmtBRL.format(totalRF+totalRV)+'</div></div>';
+    if (!state.investments.length){
+      listEl.innerHTML = '<p class="empty">Nenhum aporte registrado ainda.</p>';
+      return;
+    }
+    listEl.innerHTML = state.investments.slice().reverse().map(function(i){
+      return '<div class="inv-row" data-id="'+i.id+'">' +
+        '<span class="inv-tipo '+(i.tipo==="renda_fixa"?"rf":"rv")+'">'+(i.tipo==="renda_fixa"?"Renda fixa":"Renda variável")+'</span>' +
+        '<span>'+escapeHtml(i.mes||"")+'</span>' +
+        '<span class="num">'+fmtBRL.format(Number(i.amount)||0)+'</span>' +
+        '<button class="icon-btn" data-del-inv="'+i.id+'" aria-label="Excluir aporte">'+ICON_TRASH+'</button>' +
+        '</div>';
+    }).join("");
+    listEl.querySelectorAll('[data-del-inv]').forEach(function(b){
+      b.addEventListener("click", function(){
+        if (!confirm("Excluir este aporte?")) return;
+        state.db.doc("investments/"+b.getAttribute("data-del-inv")).delete().catch(function(e){ alert("Erro: "+e.message); });
+      });
+    });
+  }
+  document.getElementById("openInvestmentsBtn").addEventListener("click", function(){
+    document.getElementById("newInvMonth").value = state.month;
+    renderInvestmentsManager();
+    document.getElementById("investmentsOverlay").hidden = false;
+  });
+  document.getElementById("newInvTypeSeg").addEventListener("click", function(ev){
+    var b = ev.target.closest("button"); if (!b) return;
+    document.querySelectorAll("#newInvTypeSeg button").forEach(function(x){ x.classList.toggle("active", x===b); });
+  });
+  document.getElementById("addInvBtn").addEventListener("click", function(){
+    if (!state.db){ alert("Abra este app dentro do Claude para salvar."); return; }
+    var tipo = document.querySelector("#newInvTypeSeg button.active").getAttribute("data-val");
+    var amount = parseFloat(document.getElementById("newInvAmount").value);
+    var mes = document.getElementById("newInvMonth").value || state.month;
+    if (!amount || amount<=0){ alert("Informe um valor válido."); return; }
+    state.db.collection("investments").add({
+      tipo: tipo, amount: amount, mes: mes, createdAt: nowIso()
+    }).then(function(){
+      document.getElementById("newInvAmount").value = "";
+    }).catch(function(e){ alert("Erro ao registrar: "+e.message); });
+  });
+
+  // ---------- Share ----------
+  document.getElementById("openShareBtn").addEventListener("click", function(){
+    document.getElementById("shareOverlay").hidden = false;
   });
 
   // ---------- Financial assistant ----------
