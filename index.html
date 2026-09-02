@@ -720,9 +720,9 @@ button{font-family:inherit}
 <div class="overlay" id="assistantOverlay" hidden>
   <div class="sheet" style="max-width:520px">
     <div class="sheet-head"><h3>Assistente financeiro</h3><button class="close-x" data-close="assistantOverlay">×</button></div>
-    <p class="panel-sub" style="margin-top:-6px">Pergunte sobre seus gastos, entradas, categorias ou a reserva de emergência — as respostas usam os dados reais lançados no app.</p>
+    <p class="panel-sub" style="margin-top:-6px">Seu educador financeiro pessoal: gastos, dívidas, crédito x débito, milhas e cashback — sempre com base nos dados reais do app.</p>
     <div class="assistant-messages" id="assistantMessages">
-      <p class="assistant-empty" id="assistantEmptyMsg">Exemplos: "quanto gastei com mercado esse mês?", "minhas saídas fixas cabem nas minhas entradas?", "como está minha reserva de emergência?"</p>
+      <p class="assistant-empty" id="assistantEmptyMsg">Exemplos: "por onde eu começo a quitar minhas dívidas?", "vale a pena usar cartão de crédito pra ganhar milhas?", "devo usar mais crédito ou débito?", "como está minha reserva de emergência?"</p>
     </div>
     <div class="assistant-input-row">
       <input id="assistantInput" type="text" placeholder="Pergunte algo sobre suas finanças…" autocomplete="off">
@@ -1932,7 +1932,7 @@ button{font-family:inherit}
     return [
       {
         name: "resumo_do_mes",
-        description: "Retorna o resumo financeiro real de um mês do app: total de entradas, saídas fixas, saídas variáveis, saldo, o valor gasto por categoria, o valor recebido por origem e as contas fixas ainda pendentes de pagamento. Use sempre que a pergunta envolver valores, categorias, saldo ou contas de um mês específico.",
+        description: "Retorna o resumo financeiro real de um mês do app: total de entradas, saídas fixas, saídas variáveis, saldo, o valor gasto por categoria, o valor recebido por origem, o valor gasto por forma de pagamento (Pix, Débito, Cartão, Dinheiro, Outro) e as contas fixas ainda pendentes de pagamento. Use sempre que a pergunta envolver valores, categorias, saldo, contas de um mês específico, ou a proporção de uso entre crédito e débito/Pix.",
         inputSchema: { type:"object", properties: {
           mes: { type:"string", description:"Mês no formato AAAA-MM, por exemplo 2026-09. Se omitido, usa o mês em exibição no app agora: " + state.month + "." }
         } },
@@ -1957,6 +1957,13 @@ button{font-family:inherit}
               if (e.kind === "fixa" && e.status === "pendente") pendentes.push({nome:e.description, valor:v, diaVencimento:e.dueDay});
             }
           });
+          var porPagamento = {};
+          snap.docs.forEach(function(d){
+            var e = d.data();
+            if (e.type !== "despesa" || e.status === "pulado") return;
+            var pm = e.paymentMethod || "Não informado";
+            porPagamento[pm] = (porPagamento[pm]||0) + (Number(e.amount)||0);
+          });
           return {
             mes: mes,
             entradas: Number(entradas.toFixed(2)),
@@ -1965,8 +1972,30 @@ button{font-family:inherit}
             saldo: Number((entradas-saidasFixas-saidasVariaveis).toFixed(2)),
             gastosPorCategoria: catSaidas,
             entradasPorOrigem: origEntradas,
+            gastosPorFormaPagamento: porPagamento,
             contasFixasPendentes: pendentes
           };
+        }
+      },
+      {
+        name: "compromissos_e_dividas",
+        description: "Retorna a lista completa de compromissos financeiros ativos do usuário, independente do mês: todas as contas fixas de saída (aluguel, empréstimo, financiamento, assinaturas etc.) com seus valores mensais, e todas as compras parceladas em aberto com valor da parcela, quantas parcelas faltam e a categoria. Use para ajudar o usuário a entender quais são suas dívidas e compromissos recorrentes e priorizar a quitação.",
+        execute: async function(){
+          if (!state.db) throw new Error("Sem acesso aos dados agora.");
+          var fixos = state.recurring.filter(function(r){ return r.active!==false && r.type!=="receita"; }).map(function(r){
+            return { nome:r.name, valorMensal:Number(r.amount)||0, categoria:r.category||"Outro", diaVencimento:r.dueDay };
+          });
+          var parcelamentos = state.installments.filter(function(i){ return i.active!==false; }).map(function(i){
+            var total = i.totalInstallments||1;
+            var n = monthsBetween(i.startMonth, state.month) + 1;
+            var restantes = n < 1 ? total : n > total ? 0 : (total - n + 1);
+            return {
+              nome:i.name, valorDaParcela:Number(i.amount)||0, parcelasTotais:i.totalInstallments||1,
+              parcelasRestantes: restantes, valorTotalRestante: Number((restantes*(Number(i.amount)||0)).toFixed(2)),
+              categoria:i.category||"Outro", formaDePagamento:i.paymentMethod||""
+            };
+          });
+          return { contasFixasAtivas: fixos, comprasParceladas: parcelamentos };
         }
       },
       {
@@ -2026,7 +2055,12 @@ button{font-family:inherit}
     appendMsg("user", question);
     var thinkingEl = appendMsg("assistant thinking", "Pensando…");
 
-    var preamble = "Você é o assistente financeiro dentro do app Caixa Mensal do usuário. Responda sempre em português do Brasil, tom direto e prático, no máximo 4 a 5 frases a menos que peçam mais detalhe. Use as ferramentas disponíveis para consultar números reais antes de responder — nunca estime ou invente valores. O mês em exibição no app agora é " + monthLabel(state.month) + " (" + state.month + ").";
+    var preamble = "Você é o assistente financeiro dentro do app Caixa Mensal do usuário, atuando como um educador financeiro experiente: especialista em quitação de dívidas, na escolha entre crédito e débito/Pix, e em programas de recompensas (milhas, cashback). Responda sempre em português do Brasil, tom direto e prático, sem jargão desnecessário, no máximo 4 a 5 frases a menos que peçam um plano mais detalhado. Use as ferramentas disponíveis para consultar números reais antes de responder — nunca estime ou invente valores.\n\n" +
+      "Diretrizes de especialista:\n" +
+      "- Dívidas: use a ferramenta de compromissos e dívidas para ver o que existe. Se o usuário quiser priorizar quitação, pergunte a taxa de juros de cada dívida quando não for óbvia — recomende o método avalanche (quitar primeiro a de juros mais alto) como padrão, mas explique a alternativa bola de neve (quitar a menor primeiro, por motivação) se parecer relevante para o perfil da pessoa.\n" +
+      "- Crédito x débito/Pix: cartão de crédito só compensa quando a fatura é paga INTEGRALMENTE todo mês — só nesse caso vale usá-lo para acumular milhas ou cashback em compras que já aconteceriam de qualquer forma. Se há risco de não pagar a fatura cheia, ou já existe dívida no cartão, recomende Pix/débito sem hesitar — o rotativo do cartão no Brasil costuma passar de 400% ao ano. Baseie a recomendação na forma de pagamento que o usuário já usa (consulte os dados reais).\n" +
+      "- Sempre que recomendar algo com números, mostre a conta de forma simples (ex.: 'R$2.000/mês no crédito com 1% de cashback = R$20/mês de volta', ou 'R$1.000 de dívida a 12% ao mês = R$120/mês só de juros').\n\n" +
+      "Mês em exibição no app agora: " + monthLabel(state.month) + " (" + state.month + ").";
     var turns = state.assistantHistory.slice();
     var content = turns.length ? question : (preamble + "\n\nPergunta do usuário: " + question);
     turns.push({ role:"user", content: content });
